@@ -3,74 +3,96 @@ import requests
 import numpy as np
 import joblib
 
-# ---------- CONFIG ----------
+# -----------------------------
+# Load API key & model paths
+# -----------------------------
+API_KEY = st.secrets["API_KEY"]  # Your OpenWeather API Key
 
-# API key from Streamlit secrets (both local secrets.toml and cloud)
-API_KEY = st.secrets["API_KEY"]
-
-# Available models and their file paths
-MODEL_FILES = {
+MODEL_PATHS = {
     "Linear Regression": "models/linear_regression.pkl",
     "Random Forest": "models/random_forest.pkl",
-    "Decision Tree": "models/decision_tree.pkl",
+    "Decision Tree": "models/decision_tree.pkl"
 }
 
+# -----------------------------
+# Function: Load model safely
+# -----------------------------
 @st.cache_resource
-def load_model(path: str):
-    """Cache model load so it doesn't reload on every interaction."""
-    return joblib.load(path)
+def load_model(path):
+    try:
+        return joblib.load(path)
+    except Exception as e:
+        st.error(f"❌ Could not load model: {path}")
+        st.error(str(e))
+        return None
 
-# ---------- UI ----------
+# -----------------------------
+# Function: Fetch weather data
+# -----------------------------
+def get_weather(city):
+    url = (
+        f"https://api.openweathermap.org/data/2.5/weather?"
+        f"q={city}&appid={API_KEY}&units=metric"
+    )
+    response = requests.get(url)
 
-st.title("🌤️ Real-time Weather Prediction App (Multiple Models)")
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+
+    return {
+        "temp": data["main"]["temp"],
+        "humidity": data["main"]["humidity"],
+        "pressure": data["main"]["pressure"],
+        "wind_speed": data["wind"]["speed"],
+        "weather_code": data["weather"][0]["id"]
+    }
+
+# -----------------------------
+# Streamlit UI
+# -----------------------------
+st.title("🌤️ Real-time Weather Prediction App")
+st.markdown("### Select a Machine Learning Model for Prediction")
+
+model_choice = st.selectbox(
+    "Choose a Prediction Model:",
+    list(MODEL_PATHS.keys())
+)
 
 city = st.text_input("Enter City Name", "Chennai")
 
-model_choice = st.selectbox(
-    "Choose a prediction model",
-    list(MODEL_FILES.keys())
-)
-
-st.caption("📌 The model predicts approx. next-hour temperature from current weather.")
-
 if st.button("Get Weather & Predict"):
-    if not API_KEY:
-        st.error("API Key not found. Check Streamlit secrets.")
+    weather = get_weather(city)
+
+    if weather is None:
+        st.error("City not found. Try another name.")
     else:
-        # Call OpenWeather API
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
-        response = requests.get(url)
+        st.subheader(f"🌍 Weather in {city}")
 
-        if response.status_code == 200:
-            data = response.json()
+        st.write(f"**Temperature:** {weather['temp']} °C")
+        st.write(f"**Humidity:** {weather['humidity']} %")
+        st.write(f"**Pressure:** {weather['pressure']} hPa")
+        st.write(f"**Wind Speed:** {weather['wind_speed']} m/s")
+        st.write(f"**Weather Code:** {weather['weather_code']}")
 
-            # Extract features
-            temp = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            pressure = data["main"]["pressure"]
-            wind_speed = data["wind"]["speed"]
-            weather_code = data["weather"][0]["id"]  # numeric condition code
+        # -----------------------------
+        # Prepare ML Input
+        # -----------------------------
+        features = np.array([[
+            weather["temp"],
+            weather["humidity"],
+            weather["pressure"],
+            weather["wind_speed"],
+            weather["weather_code"]
+        ]])
 
-            st.subheader(f"🌍 Current Weather in {city}")
-            st.write(f"🌡 **Temperature:** {temp} °C")
-            st.write(f"💧 **Humidity:** {humidity} %")
-            st.write(f"🔵 **Pressure:** {pressure} hPa")
-            st.write(f"🌬 **Wind Speed:** {wind_speed} m/s")
-            st.write(f"🌈 **Weather Code:** {weather_code}")
+        # Load model
+        model = load_model(MODEL_PATHS[model_choice])
 
-            # Prepare features in same order as training
-            features = np.array([[temp, humidity, pressure, wind_speed, weather_code]])
-
-            # Load selected model
-            model_path = MODEL_FILES[model_choice]
-            model = load_model(model_path)
-
-            # Predict
+        if model:
             prediction = model.predict(features)[0]
 
             st.success(
-                f"🔮 Model **{model_choice}** predicts next-hour temperature: "
-                f"**{prediction:.2f} °C**"
+                f"🌈 **Prediction using {model_choice}: {prediction:.2f}**"
             )
-        else:
-            st.error("City not found. Try again.")
