@@ -3,13 +3,8 @@ import requests
 import json
 import numpy as np
 import joblib
-from dotenv import load_dotenv
-import os
 
-# Load API key
-load_dotenv()
-API_KEY = os.getenv("OPENWEATHER_API_KEY")
-
+API_KEY = st.secrets["OPENWEATHER_API_KEY"]
 # Load trained model
 model = joblib.load("models/weather_model.pkl")
 
