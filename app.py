@@ -7,7 +7,7 @@ import os
 
 
 
-API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+API_KEY = st.secrets["API_KEY"]
 
 
 # Load trained model
