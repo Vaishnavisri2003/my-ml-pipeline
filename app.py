@@ -3,12 +3,12 @@ import requests
 import json
 import numpy as np
 import joblib
-from dotenv import load_dotenv
 import os
 
-# Load API key
-load_dotenv()
-API_KEY = os.getenv("OPENWEATHER_API_KEY")
+
+
+API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+
 
 # Load trained model
 model = joblib.load("models/weather_model.pkl")
@@ -19,7 +19,7 @@ city = st.text_input("Enter City Name", "Chennai")
 
 if st.button("Get Weather & Predict"):
     if not API_KEY:
-        st.error("API Key not found. Check the .env file.")
+        st.error("API Key not found in Streamlit Secrets.")
     else:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
         response = requests.get(url)
@@ -38,7 +38,7 @@ if st.button("Get Weather & Predict"):
             st.write(f"Pressure: **{pressure} hPa**")
             st.write(f"Wind Speed: **{wind_speed} m/s**")
 
-            # Model uses only 1 feature (temperature)
+            # Model uses only temperature as input
             features = [[temp]]
             prediction = model.predict(features)[0]
 
