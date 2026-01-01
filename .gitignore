@@ -1,7 +1,10 @@
-﻿venv/
+# Virtual environment
+venv/
+
+# Python cache
 __pycache__/
-data/
-.env
 *.pyc
-.env
+
+# Data & models (optional)
+data/
 
