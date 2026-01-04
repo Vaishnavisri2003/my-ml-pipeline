@@ -1,4 +1,4 @@
-# Virtual environment
+﻿# Virtual environment
 venv/
 
 # Python cache
@@ -8,3 +8,6 @@ __pycache__/
 # Data & models (optional)
 data/
 
+.env
+.streamlit/
+predictions.db
