@@ -1,13 +1,7 @@
-﻿# Virtual environment
-venv/
-
-# Python cache
+﻿.env
+.streamlit/secrets.toml
 __pycache__/
 *.pyc
-
-# Data & models (optional)
-data/
-
-.env
-.streamlit/
-predictions.db
+venv/
+env/
+.DS_Store
